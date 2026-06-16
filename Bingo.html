@@ -1,0 +1,266 @@
++<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bingo 90 – Caller • Full</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --accent:#ffd400;
+    --card:rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:#eaf2ff; font-family:'Poppins',system-ui,Arial,sans-serif;
+    min-height:100vh; display:flex; flex-direction:column;
+    background: url(/home/sergio-vazquez/Documentos/Bingo/logo.png);
+  }
+
+  /* Header con controles a la derecha */
+  header{
+    position:sticky; top:0; z-index:3; padding:12px 16px; display:flex; gap:12px; align-items:center;
+    background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.25)); border-bottom:1px solid rgba(255,255,255,.15);
+    backdrop-filter: blur(10px);
+  }
+  .brand{display:flex; align-items:center; gap:12px}
+  .logo{width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(from 200deg,#ffd400,#ffdf66,#ffb300,#ffd400); color:#1b1b1b; font-weight:900}
+  h1{margin:0; font-size:clamp(18px,3vw,28px)}
+  .spacer{flex:1}
+  .hbtn{border:none; border-radius:10px; padding:10px 14px; font-weight:800; cursor:pointer}
+  .draw{background:#7b1fa2; color:#fff}
+  .pause{background:#ffca28; color:#222}
+  .resume{background:#1565c0; color:#fff}
+  .gear{background:#263238; color:#fff}
+
+  /* Disposición */
+  main{flex:1; display:grid; gap:16px; padding:16px; grid-template-rows: auto 1fr}
+
+  /* Fila superior: premios | número actual | últimos 5 */
+  .top{
+    display:grid; gap:16px;
+    grid-template-columns: 340px 1fr 420px;
+    grid-template-areas: "prizes now last5";
+    align-items:stretch;
+  }
+  @media (max-width: 1200px){
+    .top{grid-template-columns:1fr; grid-template-areas:"prizes" "now" "last5"}
+  }
+
+  .card{background:var(--card); border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:16px; backdrop-filter: blur(10px)}
+
+  /* Premios (más grande) */
+  #prizesCard{grid-area:prizes; display:flex; flex-direction:column; gap:14px; justify-content:center}
+  .prize-row{display:flex; gap:10px; align-items:baseline; justify-content:center}
+  .prize-label{color:var(--accent); font-weight:900; font-size:clamp(22px,3vw,34px)}
+  .prize-value{font-weight:900; font-size:clamp(28px,4vw,46px)}
+
+  /* Número actual (bola pequeña pero dígito grande) */
+  #nowCard{grid-area:now; display:grid; place-items:center}
+  .big{
+    width:min(56%, 420px); /* bola más PEQUEÑA */
+    aspect-ratio:1/1; margin:auto; border-radius:50%;
+    display:grid; place-items:center;
+    background:#0d0d0d; border:8px solid var(--accent); color:var(--accent);
+    box-shadow: inset 0 0 36px rgba(0,0,0,.65);
+  }
+  .big-number{font-weight:900; line-height:1; transform-origin:center}
+
+  /* Últimos 5 (más grandes) */
+  #last5Card{grid-area:last5; display:flex; flex-direction:column; gap:10px; justify-content:center}
+  .prev5{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+  .mini{
+    width:60px; height:60px; border-radius:50%; display:grid; place-items:center;
+    background: radial-gradient(ellipse at 35% 30%, #6ec1ff 0%, #4aa3ff 60%, #2b6fb8 100%);
+    color:#071a31; font-weight:900; -webkit-text-stroke:1px rgba(255,255,255,.35);
+    border:2px solid rgba(0,0,0,.55); box-shadow: 0 6px 14px rgba(0,0,0,.35), inset 0 2px 6px rgba(255,255,255,.14)
+  }
+  .mini.latest{outline:3px solid var(--accent); outline-offset:2px; transform:scale(1.06)}
+  .mini.fade-1{opacity:.9} .mini.fade-2{opacity:.75} .mini.fade-3{opacity:.6} .mini.fade-4{opacity:.45}
+
+  /* Tablero 1–90 SIN cuadrados (solo números) */
+  #boardCard{min-height:0}
+  .flatgrid{
+    padding:12px; display:grid; grid-template-columns: repeat(10, 1fr);
+    gap:12px; align-content:center; justify-items:center; width:100%; height:100%;
+  }
+  .num{
+    /* sin fondo ni borde, solo texto */
+    display:grid; place-items:center; aspect-ratio:1/1; /* para que haya el MISMO gap vertical y horizontal */
+    font-weight:900; line-height:1;
+    color:rgba(255,255,255,.25);
+    font-size:clamp(22px, 3.4vw, 54px); /* MÁS GRANDE Y EN NEGRITA */
+    user-select:none;
+  }
+  .num.lit{
+    color:#fff;
+    text-shadow: 0 0 8px rgba(255,255,255,.45), 0 0 14px rgba(255,255,255,.25); /* “brillo” blanco */
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">🎱</div>
+      <h1>Bingo 90 – Caller</h1>
+    </div>
+    <div class="spacer"></div>
+    <button class="hbtn pause"  onclick="pausar()">Pausar</button>
+    <button class="hbtn resume" onclick="reanudar()">Reanudar</button>
+    <button class="hbtn draw"   onclick="sacarBola()">Sacar ahora</button>
+    <button class="hbtn gear"   onclick="toggleSettings()">⚙️ Ajustes</button>
+  </header>
+
+  <!-- Ajustes mínimos -->
+  <div id="settings" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:10">
+    <div style="background:#fff;color:#111;padding:18px;border-radius:16px;width:min(560px,92vw)">
+      <h3 style="margin:0 0 12px 0">⚙️ Ajustes</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+        <label>⏱️ Segundos <input id="vel" type="number" min="1" value="5" style="width:100px"></label>
+        <label><input id="voz" type="checkbox" checked> Voz ES</label>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:10px">
+        <label>🎖️ Línea <input id="inpLinea" type="number" value="50" min="0" style="width:120px"></label>
+        <label>🏆 Bingo <input id="inpBingo" type="number" value="100" min="0" style="width:120px"></label>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button onclick="iniciar()" style="background:#1e9b39;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:800">Iniciar</button>
+        <button onclick="reiniciar()" style="background:#c62828;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:800">Reiniciar</button>
+        <button onclick="toggleSettings()" style="background:#263238;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:800">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <!-- Fila superior -->
+    <div class="top">
+      <section id="prizesCard" class="card">
+        <div class="prize-row"><span class="prize-label">LÍNEA:</span> <span id="premioLinea" class="prize-value">50 €</span></div>
+        <div class="prize-row"><span class="prize-label">BINGO:</span> <span id="premioBingo" class="prize-value">100 €</span></div>
+      </section>
+
+      <section id="nowCard" class="card">
+        <div class="big"><div id="actual" class="big-number">--</div></div>
+      </section>
+
+      <section id="last5Card" class="card">
+        <div id="prev5" class="prev5"></div>
+      </section>
+    </div>
+
+    <!-- Abajo: tablero sin cuadrados -->
+    <section id="boardCard" class="card">
+      <div id="flatgrid" class="flatgrid"></div>
+    </section>
+  </main>
+
+<script>
+  let pool=[], timer=null, pausado=false, history=[];
+  const actualEl  = document.getElementById('actual');
+  const flatgrid  = document.getElementById('flatgrid');
+  const prev5El   = document.getElementById('prev5');
+  const premioLineaEl = document.getElementById('premioLinea');
+  const premioBingoEl = document.getElementById('premioBingo');
+  const inpLinea = document.getElementById('inpLinea');
+  const inpBingo = document.getElementById('inpBingo');
+
+  // Dígito MUY grande dentro de bola pequeña
+  new ResizeObserver(entries=>{
+    for(const e of entries){
+      const d = e.contentRect.width; // diámetro
+      actualEl.style.fontSize = Math.floor(d * 0.72) + 'px'; // más grande
+    }
+  }).observe(document.querySelector('.big'));
+
+  function updatePremios(){
+    premioLineaEl.textContent = (Number(inpLinea.value||0)).toLocaleString('es-ES')+" €";
+    premioBingoEl.textContent = (Number(inpBingo.value||0)).toLocaleString('es-ES')+" €";
+  }
+  inpLinea?.addEventListener('input', updatePremios);
+  inpBingo?.addEventListener('input', updatePremios);
+
+  // Tablero 1..90 SIN cuadrados
+  const cells = new Map();
+  function crearCeldas(){
+    flatgrid.innerHTML=""; cells.clear();
+    for(let n=1;n<=90;n++){
+      const d=document.createElement('div');
+      d.className='num'; d.id='n-'+n; d.textContent=n;
+      flatgrid.appendChild(d); cells.set(n,d);
+    }
+  }
+
+  // Últimos 5 (más grandes)
+  function renderPrev5(){
+    const prev = history.slice(-5).reverse();
+    prev5El.innerHTML="";
+    prev.forEach((n,idx)=>{
+      const b=document.createElement('div');
+      b.className='mini ' + (idx===0 ? 'latest' : 'fade-'+idx);
+      b.textContent=n;
+      prev5El.appendChild(b);
+    });
+  }
+
+  function decirNumero(n){
+    const voz = document.getElementById('voz');
+    if(!voz || !voz.checked) return;
+    const u=new SpeechSynthesisUtterance(n.toString());
+    u.lang='es-ES'; speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }
+
+  function resetPool(){
+    pool=Array.from({length:90},(_,i)=>i+1);
+    history=[]; actualEl.textContent='--'; prev5El.innerHTML='';
+    crearCeldas(); updatePremios();
+  }
+
+  function animarNumero(){
+    actualEl.style.transform='scale(.8)'; actualEl.style.opacity='0.7';
+    requestAnimationFrame(()=>{
+      actualEl.style.transition='transform .18s ease, opacity .18s ease';
+      actualEl.style.transform='scale(1)'; actualEl.style.opacity='1';
+      setTimeout(()=>{actualEl.style.transition='none'}, 200);
+    });
+  }
+
+  function sacarBola(){
+    if(pool.length===0){ return; }
+    const i=Math.floor(Math.random()*pool.length);
+    const n=pool.splice(i,1)[0];
+    history.push(n);
+    actualEl.textContent=n; animarNumero();
+    const cell=cells.get(n); if(cell) cell.classList.add('lit'); // SE ENCIENDE EN BLANCO CON GLOW
+    renderPrev5(); decirNumero(n);
+  }
+
+  function iniciar(){
+    reiniciar(); sacarBola();
+    const ms=Math.max(1, parseInt(document.getElementById('vel').value)||5)*1000;
+    timer=setInterval(sacarBola, ms); toggleSettings();
+  }
+  function pausar(){ if(timer){ clearInterval(timer); timer=null; pausado=true; } }
+  function reanudar(){
+    if(pausado && pool.length>0 && !timer){
+      const ms=Math.max(1, parseInt(document.getElementById('vel').value)||5)*1000;
+      timer=setInterval(sacarBola, ms); pausado=false;
+    }
+  }
+  function reiniciar(){ speechSynthesis.cancel(); clearInterval(timer); timer=null; pausado=false; resetPool(); }
+
+  function toggleSettings(){
+    const el = document.getElementById('settings');
+    el.style.display = el.style.display==='flex' ? 'none' : 'flex';
+  }
+
+  // Inicio
+  resetPool();
+
+  // Exponer para botones del header
+  window.iniciar=iniciar; window.pausar=pausar; window.reanudar=reanudar; window.sacarBola=sacarBola; window.toggleSettings=toggleSettings; window.reiniciar=reiniciar;
+</script>
+</body>
+</html>
